@@ -88,6 +88,10 @@ func sortByName(node *yaml.Node, key string, rank map[string]int) {
 
 		return name1 < name2
 	})
+
+	for i := range nodes {
+		rankedKeySort(&nodes[i].Content, rank)
+	}
 }
 
 func Format(in io.Reader, out io.Writer) error {
@@ -130,17 +134,13 @@ func Format(in io.Reader, out io.Writer) error {
 			"stepTemplate": 8,
 			"steps":        9,
 		})
-
 		sortByName(spec, "params", map[string]int{
-			"displayName":  1,
-			"description":  2,
-			"params":       3,
-			"results":      4,
-			"volumes":      5,
-			"workspaces":   6,
-			"sidecars":     7,
-			"stepTemplate": 8,
-			"steps":        9,
+			"name":        1,
+			"description": 2,
+			"type":        3,
+			"default":     4,
+			"properties":  5,
+			"enum":        6,
 		})
 		sortByName(spec, "results", map[string]int{
 			"name":        1,
