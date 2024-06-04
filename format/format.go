@@ -277,6 +277,10 @@ func Format(in io.Reader, out io.Writer) error {
 
 				step.Content[j+1].Value = sh.String()
 			}
+
+			deleteIf(step, "computeResources", func(n *yaml.Node) bool {
+				return n == nil || len(n.Content) == 0
+			})
 		}
 
 		deleteIf(find(&node, "metadata"), "creationTimestamp", func(n *yaml.Node) bool {
