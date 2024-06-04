@@ -57,15 +57,17 @@ func fromPairs(pairs []pair, nodes *[]*yaml.Node) {
 func rankedKeySort(nodes *[]*yaml.Node, rank map[string]int) {
 	pairs := toPairs(nodes)
 	sort.Slice(pairs, func(i, j int) bool {
-		r1, ok := rank[pairs[i].key.Value]
+		k1 := pairs[i].key.Value
+		r1, ok := rank[k1]
 		if !ok {
 			r1 = 1000
 		}
-		r2, ok := rank[pairs[j].key.Value]
+		k2 := pairs[j].key.Value
+		r2, ok := rank[k2]
 		if !ok {
 			r2 = 1000
 		}
-		return r1 < r2 || pairs[i].key.Value < pairs[j].key.Value
+		return r1 < r2 || (r1 == r2 && k1 < k2)
 	})
 	fromPairs(pairs, nodes)
 }
