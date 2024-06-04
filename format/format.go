@@ -138,6 +138,22 @@ func unquote(node *yaml.Node) {
 	}
 }
 
+func sortEverything(node *yaml.Node) {
+	switch node.Kind {
+	case yaml.DocumentNode:
+		sortEverything(node.Content[0])
+	case yaml.MappingNode:
+		rankedKeySort(&node.Content, map[string]int{})
+		for i := 1; i < len(node.Content); i += 2 {
+			sortEverything(node.Content[i])
+		}
+	case yaml.SequenceNode:
+		for i := 0; i < len(node.Content); i++ {
+			sortEverything(node.Content[i])
+		}
+	}
+}
+
 func Format(in io.Reader, out io.Writer) error {
 	if closer, ok := in.(io.Closer); ok {
 		defer closer.Close()
@@ -159,6 +175,8 @@ func Format(in io.Reader, out io.Writer) error {
 			}
 			return fmt.Errorf("error: cannot decode object: %s", err)
 		}
+
+		sortEverything(&node)
 
 		rankedKeySort(&find(&node, "metadata").Content, map[string]int{
 			"name":              1,
