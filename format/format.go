@@ -144,9 +144,10 @@ func Format(in io.Reader, out io.Writer) error {
 		}
 
 		rankedKeySort(&find(&node, "metadata").Content, map[string]int{
-			"name":        1,
-			"annotations": 2,
-			"labels":      3,
+			"name":              1,
+			"annotations":       2,
+			"labels":            3,
+			"creationTimestamp": 4,
 		})
 
 		spec := find(&node, "spec")
