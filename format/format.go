@@ -121,6 +121,23 @@ func deleteIf(node *yaml.Node, key string, cond func(*yaml.Node) bool) {
 	}
 }
 
+func unquote(node *yaml.Node) {
+	switch node.Kind {
+	case yaml.DocumentNode:
+		unquote(node.Content[0])
+	case yaml.MappingNode:
+		for i := 1; i < len(node.Content); i += 2 {
+			unquote(node.Content[i])
+		}
+	case yaml.SequenceNode:
+		for i := 0; i < len(node.Content); i++ {
+			unquote(node.Content[i])
+		}
+	case yaml.ScalarNode:
+		node.Style = node.Style & ^yaml.DoubleQuotedStyle & ^yaml.SingleQuotedStyle & ^yaml.LiteralStyle & ^yaml.FoldedStyle & ^yaml.FlowStyle
+	}
+}
+
 func Format(in io.Reader, out io.Writer) error {
 	if closer, ok := in.(io.Closer); ok {
 		defer closer.Close()
@@ -290,6 +307,8 @@ func Format(in io.Reader, out io.Writer) error {
 		deleteIf(find(spec, "stepTemplate"), "computeResources", func(n *yaml.Node) bool {
 			return n == nil || len(n.Content) == 0
 		})
+
+		unquote(&node)
 
 		encoder := yaml.NewEncoder(out)
 		defer encoder.Close()
