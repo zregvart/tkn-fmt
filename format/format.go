@@ -13,12 +13,17 @@ import (
 )
 
 func find(node *yaml.Node, name string) *yaml.Node {
+	if node == nil {
+		return nil
+	}
+
 	if node.Kind == yaml.DocumentNode {
 		return find(node.Content[0], name)
 	}
+
 	for i := range node.Content {
 		if node.Content[i].Value == name {
-			if len(node.Content) >= i+1 && (node.Content[i+1].Kind == yaml.MappingNode || node.Content[i+1].Kind == yaml.SequenceNode) {
+			if len(node.Content) >= i+1 {
 				return node.Content[i+1]
 			}
 		}
@@ -60,7 +65,7 @@ func rankedKeySort(nodes *[]*yaml.Node, rank map[string]int) {
 		if !ok {
 			r2 = 1000
 		}
-		return r1 < r2
+		return r1 < r2 || pairs[i].key.Value < pairs[j].key.Value
 	})
 	fromPairs(pairs, nodes)
 }
@@ -91,6 +96,26 @@ func sortByName(node *yaml.Node, key string, rank map[string]int) {
 
 	for i := range nodes {
 		rankedKeySort(&nodes[i].Content, rank)
+	}
+}
+
+func deleteIf(node *yaml.Node, key string, cond func(*yaml.Node) bool) {
+	n := find(node, key)
+	if n == nil {
+		return
+	}
+
+	if cond(n) {
+		x := node.Content[:0]
+		for i := 0; i < len(node.Content); i++ {
+			if node.Content[i].Value != key {
+				x = append(x, node.Content[i])
+			} else {
+				i++
+			}
+		}
+
+		node.Content = x
 	}
 }
 
@@ -149,6 +174,9 @@ func Format(in io.Reader, out io.Writer) error {
 			"type":        4,
 			"properties":  5,
 		})
+		sortByName(spec, "volumes", map[string]int{
+			"name": 1,
+		})
 		sortByName(spec, "workspaces", map[string]int{
 			"name":        1,
 			"description": 2,
@@ -163,24 +191,42 @@ func Format(in io.Reader, out io.Writer) error {
 			"args":                     4,
 			"workingDir":               5,
 			"ports":                    6,
-			"envFrom":                  7,
-			"env":                      8,
+			"env":                      7,
+			"envFrom":                  8,
 			"computeResources":         9,
 			"volumeMounts":             10,
 			"volumeDevices":            11,
-			"livenessProbe":            12,
-			"readinessProbe":           13,
-			"startupProbe":             14,
-			"lifecycle":                15,
-			"terminationMessagePath":   16,
-			"terminationMessagePolicy": 17,
-			"imagePullPolicy":          18,
-			"securityContext":          19,
-			"stdin":                    20,
-			"stdinOnce":                21,
-			"omitempty":                22,
-			"script":                   23,
-			"workspaces":               24,
+			"workspaces":               12,
+			"livenessProbe":            13,
+			"readinessProbe":           14,
+			"startupProbe":             15,
+			"lifecycle":                16,
+			"terminationMessagePath":   17,
+			"terminationMessagePolicy": 18,
+			"imagePullPolicy":          19,
+			"securityContext":          20,
+			"stdin":                    21,
+			"stdinOnce":                22,
+			"omitempty":                23,
+			"script":                   24,
+		})
+		sortByName(spec, "stepTemplate", map[string]int{
+			"image":            1,
+			"command":          2,
+			"args":             3,
+			"workingDir":       4,
+			"env":              5,
+			"envFrom":          6,
+			"computeResources": 7,
+			"volumeMounts":     8,
+			"volumeDevices":    9,
+			"imagePullPolicy":  10,
+			"securityContext":  11,
+		})
+		sortByName(find(spec, "stepTemplate"), "env", map[string]int{
+			"name":      1,
+			"value":     2,
+			"valueFrom": 3,
 		})
 
 		steps := find(spec, "steps")
@@ -229,6 +275,14 @@ func Format(in io.Reader, out io.Writer) error {
 				step.Content[j+1].Value = sh.String()
 			}
 		}
+
+		deleteIf(find(&node, "metadata"), "creationTimestamp", func(n *yaml.Node) bool {
+			return n.Value == "null"
+		})
+
+		deleteIf(find(spec, "stepTemplate"), "computeResources", func(n *yaml.Node) bool {
+			return n == nil || len(n.Content) == 0
+		})
 
 		encoder := yaml.NewEncoder(out)
 		defer encoder.Close()
