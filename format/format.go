@@ -335,6 +335,7 @@ func Format(in io.Reader, out io.Writer) error {
 		encoder := yaml.NewEncoder(out)
 		defer encoder.Close()
 
+		encoder.SetIndent(2)
 		encoder.SetLineBreakStyle(yaml.LineBreakStyleLF)
 		encoder.SetExplicitDocumentStart(true)
 		encoder.SetWidth(72)
