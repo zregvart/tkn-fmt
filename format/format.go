@@ -176,6 +176,10 @@ func Format(in io.Reader, out io.Writer) error {
 			return fmt.Errorf("error: cannot decode object: %s", err)
 		}
 
+		if node.Kind == yaml.DocumentNode {
+			node = *node.Content[0]
+		}
+
 		sortEverything(&node)
 
 		rankedKeySort(&find(&node, "metadata").Content, map[string]int{
