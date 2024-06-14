@@ -157,10 +157,10 @@ func sortEverything(node *yaml.Node) {
 
 var tektonVariables = regexp.MustCompile(`\$\( (results|params|workspaces|credentials|context|steps)\b`)
 
-// FixTektonVariables ensures references to a Tekton variable do not contain a leading space as that
+// fixTektonVariables ensures references to a Tekton variable do not contain a leading space as that
 // prevents Tekton from processing them. For example, "$( results" is replaced with "$(results"
 // https://tekton.dev/docs/pipelines/variables/#variables-available-in-a-task
-func FixTektonVariables(buf bytes.Buffer) string {
+func fixTektonVariables(buf bytes.Buffer) string {
 	return tektonVariables.ReplaceAllString(buf.String(), "$($1")
 }
 
@@ -324,7 +324,7 @@ func Format(in io.Reader, out io.Writer) error {
 					break
 				}
 
-				step.Content[j+1].Value = FixTektonVariables(sh)
+				step.Content[j+1].Value = fixTektonVariables(sh)
 			}
 
 			deleteIf(step, "computeResources", func(n *yaml.Node) bool {
